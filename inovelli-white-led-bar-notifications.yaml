@@ -1,0 +1,83 @@
+blueprint:
+  name: Inovelli LED Bar Color Notification
+  description: >
+    Sets the color of an Inovelli switch LED bar based on the state of one or more entities.
+    Requires the LED bar to be mapped as a light entity in Home Assistant (Zigbee2MQTT).
+  domain: automation
+  input:
+    led_bar_entity:
+      name: Inovelli LED Bar Entity
+      description: The light entity representing the LED bar itself.
+      selector:
+        entity:
+          domain: light
+    trigger_entities:
+      name: Entities to Monitor
+      description: Choose one or more entities (e.g., doors, motion sensors) that will trigger the notification.
+      selector:
+        entity:
+          multiple: true
+    trigger_state:
+      name: Trigger State
+      description: The state that causes the notification to turn ON (e.g., 'on', 'open', 'home').
+      default: "on"
+    notification_color:
+      name: Notification Color
+      description: The color to set the bar to when the trigger state is matched.
+      selector:
+        color_rgb:
+    notification_brightness:
+      name: Notification Brightness
+      description: Brightness of the LED bar (0-100).
+      default: 50
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+    clear_color:
+      name: Clear Color
+      description: The color to set the bar to when the trigger state is NOT matched.
+      selector:
+        color_rgb:
+    clear_brightness:
+      name: Clear Brightness
+      description: Brightness of the LED bar when cleared (0-100).
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+
+mode: restart
+
+trigger:
+  - platform: state
+    entity_id: !input trigger_entities
+
+action:
+  - choose:
+      # If ANY of the entities match the trigger state
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ trigger.to_state.state == states(trigger.entity_id) and trigger.to_state.state == input_trigger_state }}
+              # Note: For multiple entities, we check if the current triggering entity matches the desired state.
+              # The 'restart' mode ensures that if another entity changes, it re-evaluates.
+              {{ trigger.to_state.state == !input trigger_state }}
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input led_bar_entity
+            data:
+              rgb_color: !input notification_color
+              brightness_pct: !input notification_brightness
+    # Otherwise, set it to the "clear" state
+    default:
+      - service: light.turn_on
+        target:
+          entity_id: !input led_bar_entity
+        data:
+          rgb_color: !input clear_color
+          brightness_pct: !input clear_brightness
