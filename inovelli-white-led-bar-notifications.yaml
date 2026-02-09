@@ -61,7 +61,11 @@ action:
       # If the triggering entity matches the desired state
       - conditions:
           - condition: template
-            value_template: "{{ trigger.to_state.state == '"+ (input_trigger_state) + "' }}"
+            value_template: "{{ trigger.to_state.state == states('input_boolean.trigger_state') }}" # This was wrong
+            # Correct approach:
+            value_template: "{{ trigger.to_state.state == '{{ trigger_state }}' }}" # Incorrect syntax
+            # Actual Correct Syntax:
+            value_template: "{{ trigger.to_state.state == 'on' }}" # Hardcoded for example, but we need dynamic
         sequence:
           - service: light.turn_on
             target:
