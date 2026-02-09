@@ -58,14 +58,10 @@ trigger:
 
 action:
   - choose:
-      # If ANY of the entities match the trigger state
+      # If the triggering entity matches the desired state
       - conditions:
           - condition: template
-            value_template: >
-              {{ trigger.to_state.state == states(trigger.entity_id) and trigger.to_state.state == input_trigger_state }}
-              # Note: For multiple entities, we check if the current triggering entity matches the desired state.
-              # The 'restart' mode ensures that if another entity changes, it re-evaluates.
-              {{ trigger.to_state.state == !input trigger_state }}
+            value_template: "{{ trigger.to_state.state == '"+ (input_trigger_state) + "' }}"
         sequence:
           - service: light.turn_on
             target:
